@@ -5,9 +5,9 @@ import numpy as np
 import random
 
 p.connect(p.GUI)
-p.loadURDF("/ss_pybullet/models/plane.urdf",[0,0,-.2],globalScaling=6.0,useFixedBase=True)
-cylId = p.loadURDF("/ss_pybullet/models/simple_cylinder.urdf",[0,0,0.2],globalScaling=6.0,useFixedBase=False)
-cubeId = p.loadURDF("/ss_pybullet/models/cube.urdf",[2,2,0],globalScaling=0.6,useFixedBase=False)
+p.loadURDF("pushing/plane.urdf",[0,0,-.2],globalScaling=6.0,useFixedBase=True)
+cylId = p.loadURDF("pushing/simple_cylinder.urdf",[0,0,0.2],globalScaling=6.0,useFixedBase=False)
+cubeId = p.loadURDF("pushing/cube.urdf",[2,2,0],globalScaling=0.6,useFixedBase=False)
 
 t = 0
 g = False
