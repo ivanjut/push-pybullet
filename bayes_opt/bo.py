@@ -24,6 +24,36 @@ def expected_improvement(x, gaussian_process, evaluated_loss, maximize=True, n_p
 
     return -1 * expected_improvement
 
+def prob_of_improvement(x, gaussian_process, evaluated_loss, maximize=True, n_params=1):
+    x_to_predict = x.reshape(-1, n_params)
+
+    mu, sigma = gaussian_process.predict(x_to_predict, return_std=True)
+
+    if maximize:
+        loss_optimum = np.max(evaluated_loss)
+    else:
+        loss_optimum = np.min(evaluated_loss)
+
+    scaling_factor = (-1) ** (not maximize)
+
+    # In case sigma equals zero
+    with np.errstate(divide='ignore'):
+        Z = scaling_factor * (mu - loss_optimum) / sigma
+        prob_of_improvement = norm.cdf(Z)
+
+    return -1 * prob_of_improvement
+
+def upper_confidence_bound(x, gaussian_process, evaluated_loss, maximize=True, n_params=1):
+    x_to_predict = x.reshape(-1, n_params)
+
+    mu, sigma = gaussian_process.predict(x_to_predict, return_std=True)
+
+    scaling_factor = (-1) ** (not maximize)
+
+    with np.errstate(divide='ignore'):
+        upper_confidence_bound = mu - 50.0*sigma
+
+    return -1 * upper_confidence_bound
 
 def sample_next_hyperparameter(acquisition_func, gaussian_process, evaluated_loss, maximize=False,
                                bounds=(0, 10), n_restarts=25):
@@ -46,7 +76,7 @@ def sample_next_hyperparameter(acquisition_func, gaussian_process, evaluated_los
     return best_x
 
 
-def bayesian_optimisation(f, bounds, maximize, iterations, x0=None, n_pre_samples=5):
+def bayesian_optimisation(f, bounds, maximize, iterations, x0=None, n_pre_samples=100):
     alpha, epsilon =1e-5,1e-7
     
     acquisition_func = expected_improvement
@@ -73,13 +103,14 @@ def bayesian_optimisation(f, bounds, maximize, iterations, x0=None, n_pre_sample
 
         # Sample next hyperparameter
         next_sample = sample_next_hyperparameter(acquisition_func, model, yp, maximize=maximize, bounds=bounds, n_restarts=100)
-
+        print next_sample
         # Duplicates will break the GP. In case of a duplicate, we will randomly sample a next query point.
         if np.any(np.abs(next_sample - xp) <= epsilon):
             next_sample = np.random.uniform(bounds[:, 0], bounds[:, 1], bounds.shape[0])
 
         # Sample loss for new set of parameters
         cv_score = f(*next_sample)
+        print cv_score
 
         # Update lists
         x_list.append(next_sample)
@@ -90,3 +121,6 @@ def bayesian_optimisation(f, bounds, maximize, iterations, x0=None, n_pre_sample
         yp = np.array(y_list)
 
     return xp, yp
+
+# Rosenbrock function: a,b = bayesian_optimisation(lambda x,y: ((1-x)**2 + 100*(y-x**2)**2),np.array([[-2,2],[-2,2]]),False, 100)
+# Himmelblau's function: a,b = bayesian_optimisation(lambda x,y: ((x**2 + y -11)**2 + (x + y**2 -7)**2),np.array([[-5,5],[-5,5]]),False, 100)
