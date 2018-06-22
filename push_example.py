@@ -24,7 +24,7 @@ Defines an iteration through time
 def eachIter():
     p.setGravity(0,0,-10)
     p.stepSimulation()
-    time.sleep(.005)
+    time.sleep(.001)
 
 
 def applyAction(angle, dist, iters, orn):
@@ -39,8 +39,6 @@ def applyAction(angle, dist, iters, orn):
 
     gripPos, gripOrn = p.getBasePositionAndOrientation(gripId)
     cubePos, cubeOrn = p.getBasePositionAndOrientation(cubeId)
-    cube_height = p.getEulerFromQuaternion(cubeOrn)[2]
-    print("Cube height: ", cube_height)
     x_disp = math.cos(math.radians(angle))
     y_disp = math.sin(math.radians(angle))
 
@@ -71,44 +69,68 @@ def applyAction(angle, dist, iters, orn):
     p.setJointMotorControlArray(gripId, range(numJoints), p.POSITION_CONTROL,[0.0]*numJoints)
     eachIter()
 
-    line = p.addUserDebugLine(gripNewPos, [gripNewPos[0]-10*x_disp, gripNewPos[1]-10*y_disp, 0], lineColorRGB=(1, 0, 0)) # addUserDebugText
-    print("Line id: ", line)
+    # Draw line of desired trajectory
+    start_x = gripNewPos[0]
+    start_y = gripNewPos[1]
+    end_x = gripNewPos[0]-10*dist*x_disp
+    end_y = gripNewPos[1]-10*dist*y_disp
+    line = p.addUserDebugLine(gripNewPos, [end_x, end_y, 0], lineColorRGB=(1, 0, 0)) # addUserDebugText
 
-    # Execute push
+    # Execute push and keep track of loss
+    loss = 0
     for i in range(iters):
-        gripNewPos = [cubePos[0] + (iters-i)/(iters/dist) * x_disp, cubePos[1] + (iters-i)/(iters/dist) * y_disp,height]
-        p.changeConstraint(cid, gripNewPos, p.getQuaternionFromEuler(new_orn))
+        new_grip_pos = [cubePos[0] + (iters-i)/(iters/dist) * x_disp, cubePos[1] + (iters-i)/(iters/dist) * y_disp,height]
+        p.changeConstraint(cid, new_grip_pos, p.getQuaternionFromEuler(new_orn))
+        new_cube_pos, new_cube_orn = p.getBasePositionAndOrientation(cubeId)
+        loss += straight_line_loss([start_x, start_y], [end_x, end_y], [new_cube_pos[0], new_cube_pos[1]])
+        # print(straight_line_loss([start_x, start_y], [end_x, end_y], [new_cube_pos[0], new_cube_pos[1]]))
         eachIter()
-    for i in range(300):
+    for i in range(400):
+        new_cube_pos, new_cube_orn = p.getBasePositionAndOrientation(cubeId)
+        loss += straight_line_loss([start_x, start_y], [end_x, end_y], [new_cube_pos[0], new_cube_pos[1]])
         eachIter()
 
+    print("****************")
+    print("Loss: ", loss)
+    print("****************")
     p.removeUserDebugItem(line)
 
     # Back up gripper so no collisions
     for i in range(100):
-        gripNewPos = [cubePos[0] + (i)/(100/dist) * x_disp, cubePos[1] + (i)/(100/dist) * y_disp,height]
-        p.changeConstraint(cid, gripNewPos, p.getQuaternionFromEuler(new_orn))
+        new_grip_pos = [cubePos[0] + (i)/(100/dist) * x_disp, cubePos[1] + (i)/(100/dist) * y_disp,height]
+        p.changeConstraint(cid, new_grip_pos, p.getQuaternionFromEuler(new_orn))
         eachIter()
     for i in range(100):
         eachIter()
 
 
-def distance(a, b):
+def distance_point_line(start, end, point):
     """
-    Calculates the Euclidean distance between points a and b in 3D space
-    :param a: first point as a 3D array 
-    :param b: second point as a 3D array
-    :return the Euclidean distance as a float
+    Calculates the perpendicular distance from a point to a line in 2D
+    :param start: the starting point of the line
+    :param end: the end point of the line
+    :param point: the point in question
+    :return the distance between point and the line segment formed by start/end
     """
-    dist = math.sqrt(sum((b[0]-a[0])**2, (b[1]-a[1])**2, (b[2]-a[2])**2))
+    x_diff, y_diff = end[0] - start[0], end[1] - start[1]
+    point_diff_x, point_diff_y = start[0] - point[0], start[1] - point[1]
+    norm = math.sqrt(x_diff**2 + y_diff**2)
+    dist = abs((x_diff * point_diff_y) - (point_diff_x * y_diff))/norm
     return dist
 
 
-def straight_line_loss():
-    pass
+def straight_line_loss(start, end, point):
+    """
+    Squared distance loss function to straight line trajectory
+    :param start: the starting point of the trajectory
+    :param end: the end point of the trajectory
+    :param point: the object's point reference position
+    :return:
+    """
+    return distance_point_line(start, end, point)**2
 
 
-
+# Run random samples
 while (1):
     for i in range(1000):
         angle = random.randint(0, 360)
@@ -123,4 +145,4 @@ while (1):
         applyAction(angle, dist, iters, orn)
 
     eachIter()
-    t+=1    
+    t+=1
