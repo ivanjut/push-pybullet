@@ -24,7 +24,7 @@ Defines an iteration through time
 def eachIter():
     p.setGravity(0,0,-10)
     p.stepSimulation()
-    time.sleep(.001)
+    time.sleep(.005)
 
 
 def applyAction(angle, dist, iters, orn):
@@ -39,6 +39,8 @@ def applyAction(angle, dist, iters, orn):
 
     gripPos, gripOrn = p.getBasePositionAndOrientation(gripId)
     cubePos, cubeOrn = p.getBasePositionAndOrientation(cubeId)
+    cube_height = p.getEulerFromQuaternion(cubeOrn)[2]
+    print("Cube height: ", cube_height)
     x_disp = math.cos(math.radians(angle))
     y_disp = math.sin(math.radians(angle))
 
@@ -69,6 +71,9 @@ def applyAction(angle, dist, iters, orn):
     p.setJointMotorControlArray(gripId, range(numJoints), p.POSITION_CONTROL,[0.0]*numJoints)
     eachIter()
 
+    line = p.addUserDebugLine(gripNewPos, [gripNewPos[0]-10*x_disp, gripNewPos[1]-10*y_disp, 0], lineColorRGB=(1, 0, 0)) # addUserDebugText
+    print("Line id: ", line)
+
     # Execute push
     for i in range(iters):
         gripNewPos = [cubePos[0] + (iters-i)/(iters/dist) * x_disp, cubePos[1] + (iters-i)/(iters/dist) * y_disp,height]
@@ -77,6 +82,8 @@ def applyAction(angle, dist, iters, orn):
     for i in range(300):
         eachIter()
 
+    p.removeUserDebugItem(line)
+
     # Back up gripper so no collisions
     for i in range(100):
         gripNewPos = [cubePos[0] + (i)/(100/dist) * x_disp, cubePos[1] + (i)/(100/dist) * y_disp,height]
@@ -84,6 +91,23 @@ def applyAction(angle, dist, iters, orn):
         eachIter()
     for i in range(100):
         eachIter()
+
+
+def distance(a, b):
+    """
+    Calculates the Euclidean distance between points a and b in 3D space
+    :param a: first point as a 3D array 
+    :param b: second point as a 3D array
+    :return the Euclidean distance as a float
+    """
+    dist = math.sqrt(sum((b[0]-a[0])**2, (b[1]-a[1])**2, (b[2]-a[2])**2))
+    return dist
+
+
+def straight_line_loss():
+    pass
+
+
 
 while (1):
     for i in range(1000):
