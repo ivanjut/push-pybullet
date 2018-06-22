@@ -1,2 +1,2 @@
-# ivan_nishad
-Contains code for our force-based push primitive.
+# Push PyBullet
+Contains code for our simulated push primitive in PyBullet.
