@@ -27,7 +27,7 @@ def eachIter():
     time.sleep(.001)
 
 
-def applyAction(angle, dist, iters, orn):
+def apply_push(angle, dist, iters, orn):
     """
     Applies a push to the cube with the corresponding parameters
     :param angle: the angle of push relative to the world frame of the gripper
@@ -77,21 +77,25 @@ def applyAction(angle, dist, iters, orn):
     line = p.addUserDebugLine(gripNewPos, [end_x, end_y, 0], lineColorRGB=(1, 0, 0)) # addUserDebugText
 
     # Execute push and keep track of loss
-    loss = 0
+    agg_straight_line_loss = 0
     for i in range(iters):
         new_grip_pos = [cubePos[0] + (iters-i)/(iters/dist) * x_disp, cubePos[1] + (iters-i)/(iters/dist) * y_disp,height]
         p.changeConstraint(cid, new_grip_pos, p.getQuaternionFromEuler(new_orn))
         new_cube_pos, new_cube_orn = p.getBasePositionAndOrientation(cubeId)
-        loss += straight_line_loss([start_x, start_y], [end_x, end_y], [new_cube_pos[0], new_cube_pos[1]])
-        # print(straight_line_loss([start_x, start_y], [end_x, end_y], [new_cube_pos[0], new_cube_pos[1]]))
+        agg_straight_line_loss += straight_line_loss([start_x, start_y], [end_x, end_y], [new_cube_pos[0], new_cube_pos[1]])
         eachIter()
     for i in range(400):
         new_cube_pos, new_cube_orn = p.getBasePositionAndOrientation(cubeId)
-        loss += straight_line_loss([start_x, start_y], [end_x, end_y], [new_cube_pos[0], new_cube_pos[1]])
+        agg_straight_line_loss += straight_line_loss([start_x, start_y], [end_x, end_y], [new_cube_pos[0], new_cube_pos[1]])
         eachIter()
+    new_cube_pos, new_cube_orn = p.getBasePositionAndOrientation(cubeId)
+    ang_loss = angular_loss([start_x, start_y], [end_x, end_y], [new_cube_pos[0], new_cube_pos[1]])
 
+    # Print losses for the executed push
     print("****************")
-    print("Loss: ", loss)
+    print("Aggregate Straight Line Loss: ", agg_straight_line_loss)
+    print("Mean Straight Line Loss: ", agg_straight_line_loss/iters)
+    print("Angular Loss: ", ang_loss)
     print("****************")
     p.removeUserDebugItem(line)
 
@@ -125,9 +129,27 @@ def straight_line_loss(start, end, point):
     :param start: the starting point of the trajectory
     :param end: the end point of the trajectory
     :param point: the object's point reference position
-    :return:
+    :return: the squared distance between the point and the straight line trajectory
     """
     return distance_point_line(start, end, point)**2
+
+
+def angular_loss(start, end, point):
+    """
+    Angular loss function between the object and the straight line trajectory based on the starting reference point
+    :param start: the starting point of the trajectory
+    :param end: the end point of the trajectory
+    :param point: the object's point reference position
+    :return: the squared angle in radians between the object and the trajectory with reference to the starting point
+    """
+    ref_vec = (end[0] - start[0], end[1] - start[1])
+    obj_vec = (point[0] - start[0], point[1] - start[1])
+    ref_mag = math.sqrt(ref_vec[0]**2 + ref_vec[1]**2)
+    obj_mag = math.sqrt(obj_vec[0]**2 + obj_vec[1]**2)
+    dot = ref_vec[0] * obj_vec[0] + ref_vec[1] * obj_vec[1]
+    cos = dot/(ref_mag * obj_mag)
+    angle = math.degrees(math.acos(cos))
+    return angle ** 2
 
 
 # Run random samples
@@ -142,7 +164,7 @@ while (1):
         print("Iterations: ", iters)
         print("Orientation: ", orn)
 
-        applyAction(angle, dist, iters, orn)
+        apply_push(angle, dist, iters, orn)
 
     eachIter()
     t+=1
