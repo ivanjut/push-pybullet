@@ -18,10 +18,10 @@ cid = p.createConstraint(gripId, -1, -1, -1, p.JOINT_FIXED,[0,0,0],[0,0,0],[0,0,
 numJoints = p.getNumJoints(gripId)
 
 
-"""
-Defines an iteration through time
-"""
 def eachIter():
+    """
+    Defines an iteration through time
+    """
     p.setGravity(0,0,-10)
     p.stepSimulation()
     time.sleep(.001)
