@@ -25,6 +25,6 @@ We implemented a total straight-line loss, a mean straight-line loss (total divi
 <img src="https://github.com/ivanjut/push-pybullet/blob/master/demos/initial_losses.png" width="300" height="300">
 
 ### Iteration 4: New constraint
-We incorporated the idea that the gripper could only push the block from an angle that is normal to one of it's faces. We also incorporated a second gripper to simulate the PR2 better.
+We incorporated the idea that the gripper could only push the block from an angle that is normal to one of it's faces.
 
 ## DATA COLLECTION
