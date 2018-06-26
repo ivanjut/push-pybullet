@@ -139,8 +139,8 @@ def push_result(start, end, point):
     angle = calc_angle(start, end, point)
     obj_vec = np.array([point[0] - start[0], point[1] - start[1]])
     obj_mag = np.linalg.norm(obj_vec)
-    line_disp = obj_mag * math.degrees(math.cos(abs(angle)))
-    offset = obj_mag * math.degrees(math.sin(angle))
+    line_disp = obj_mag * math.cos(abs(angle))
+    offset = obj_mag * math.sin(angle)
     return line_disp, offset
 
 
