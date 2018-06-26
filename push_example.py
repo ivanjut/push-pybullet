@@ -37,17 +37,16 @@ def apply_push(dist, iters, orn):
     assert dist >= MIN_DIST
 
     # Reset block every 100 pushes
-    # if (t % 100 == 0):
-    #     p.resetBasePositionAndOrientation(cube_id,[2,2,1],p.getQuaternionFromEuler([0, 0,random.uniform(0, 2*PI)]))
+    if (t % 100 == 0):
+        p.resetBasePositionAndOrientation(grip_id, [0,0,4], p.getQuaternionFromEuler([0,0,0]))
+        p.resetBasePositionAndOrientation(cube_id,[2,2,1],p.getQuaternionFromEuler([0, 0,random.uniform(0, 2*PI)]))
 
-    grip_pos, grip_orn = p.getBasePositionAndOrientation(grip_id)
     cube_pos, cube_orn = p.getBasePositionAndOrientation(cube_id)
     x_disp = math.cos(p.getEulerFromQuaternion(cube_orn)[2])
     y_disp = math.sin(p.getEulerFromQuaternion(cube_orn)[2])
 
-    # Pre push position for gripper with collision avoidance
+    # Pre push position for gripper
     new_grip_x, new_grip_y = cube_pos[0] + dist * x_disp, cube_pos[1] + dist * y_disp
-    pregrip_new_pos = [new_grip_x, new_grip_y, 4]
     height = orn[1]*(2/PI) + 0.5
     grip_new_pos = [new_grip_x, new_grip_y, height]
 
@@ -56,14 +55,7 @@ def apply_push(dist, iters, orn):
     vec = vec / np.linalg.norm(vec)
     new_orn = [orn[0], orn[1], (math.atan2(vec[0], -vec[1]) - PI/2 )% (2*PI)]   # Points gripper at cube (z orientation)
 
-    # Set height of gripper to be above cube so there is no collision when it readjusts
-    p.changeConstraint(constraint_id, [grip_pos[0],grip_pos[1], 4], p.getQuaternionFromEuler(new_orn))
-    for i in range(100):
-        eachIter()
-    eachIter()
-
     # Move gripper to new position
-    p.changeConstraint(constraint_id, pregrip_new_pos, p.getQuaternionFromEuler(new_orn))
     for i in range(100):
         eachIter()
     p.changeConstraint(constraint_id, grip_new_pos, p.getQuaternionFromEuler(new_orn))
@@ -97,10 +89,10 @@ def apply_push(dist, iters, orn):
     result = push_result([start_x, start_y], [end_x, end_y], [new_cube_pos[0], new_cube_pos[1]])
 
     # Print losses for the executed push
-    print("****************")
-    print("Aggregate Straight Line Loss: ", agg_straight_line_loss)
-    print("Mean Straight Line Loss: ", agg_straight_line_loss/iters)
-    print("Angular Loss: ", ang_loss)
+    # print("****************")
+    # print("Aggregate Straight Line Loss: ", agg_straight_line_loss)
+    # print("Mean Straight Line Loss: ", agg_straight_line_loss/iters)
+    # print("Angular Loss: ", ang_loss)
     print("****************")
     print("Result: ", result)
     print("****************")
@@ -170,28 +162,42 @@ def angular_loss(start, end, point):
 
 def calc_angle(start, end, point):
     """
-    Calculates the angle between the a line specified by (start, end) and a line specified by (start, point)
+    Calculates the signed angle between the a line specified by (start, end) and a line specified by (start, point)
     :param start: the starting point of the trajectory
     :param end: the end point of the trajectory
     :param point: the object's point reference position
-    :return: the angle between the two lines in radians
+    :return: the angle between the two lines in radians [-PI, PI]
     """
-    ref_vec = (end[0] - start[0], end[1] - start[1])
-    obj_vec = (point[0] - start[0], point[1] - start[1])
-    ref_mag = math.sqrt(ref_vec[0]**2 + ref_vec[1]**2)
-    obj_mag = math.sqrt(obj_vec[0]**2 + obj_vec[1]**2)
-    dot = ref_vec[0] * obj_vec[0] + ref_vec[1] * obj_vec[1]
+    ref_vec = np.array([end[0] - start[0], end[1] - start[1]])
+    obj_vec = np.array([point[0] - start[0], point[1] - start[1]])
+    ref_mag = np.linalg.norm(ref_vec)
+    obj_mag = np.linalg.norm(obj_vec)
+    dot = np.dot(ref_vec, obj_vec)
     angle = math.acos(dot/(ref_mag * obj_mag))
+
+    # Determine sign of angle
+    mat = np.transpose(np.vstack((ref_vec, obj_vec)))
+    det = np.linalg.det(mat)
+
+    if det < 0:
+        return angle * -1
     return angle
 
 
 def push_result(start, end, point):
+    """
+    Calculates the result of the push as a tuple, component along straight line path, and offset from that path
+    :param start: the starting point of the trajectory
+    :param end: the end point of the trajectory
+    :param point: the object's point reference position
+    :return: a tuple containing the push result
+    """
     angle = calc_angle(start, end, point)
-    obj_vec = (point[0] - start[0], point[1] - start[1])
-    obj_mag = math.sqrt(obj_vec[0]**2 + obj_vec[1]**2)
-    line_disp = obj_mag * math.cos(angle)               # Component of object displacement onto straight line trajectory
-    offset = obj_mag * math.sin(angle) * np.sign(angle)
-    return (line_disp, offset)
+    obj_vec = np.array([point[0] - start[0], point[1] - start[1]])
+    obj_mag = np.linalg.norm(obj_vec)
+    line_disp = obj_mag * math.degrees(math.cos(abs(angle)))
+    offset = obj_mag * math.degrees(math.sin(angle))
+    return line_disp, offset
 
 
 # Run random samples
@@ -200,10 +206,9 @@ while (1):
         dist = random.uniform(2, 5)
         iters = random.randint(200, 600)
         orn = [random.uniform(0, 2 * PI), random.uniform(0, PI/2)]
-        # print("Angle: ", angle)
-        print("Distance: ", dist)
-        print("Iterations: ", iters)
-        print("Orientation: ", orn)
+        # print("Distance: ", dist)
+        # print("Iterations: ", iters)
+        # print("Orientation: ", orn)
         apply_push(dist, iters, orn)
         t+=1
 
