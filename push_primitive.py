@@ -13,7 +13,6 @@ p.connect(p.GUI)
 p.loadURDF("pushing/plane.urdf", [0, 0, 0], globalScaling=100.0, useFixedBase=True)
 cube_id = p.loadURDF("pushing/cube.urdf", [2, 2, 1], useFixedBase=False)
 grip_id = p.loadURDF("pushing/pr2_gripper.urdf", [0, 0, 4], globalScaling=4.0, useFixedBase=False)
-target_id = target = p.loadURDF("pushing/target.urdf", [2, 2, 0], globalScaling=1, useFixedBase=True)
 constraint_id = p.createConstraint(grip_id, -1, -1, -1, p.JOINT_FIXED, [0, 0, 0], [0, 0, 0], [0, 0, 1])
 num_joints = p.getNumJoints(grip_id)
 

@@ -14,7 +14,6 @@ p.connect(p.GUI)
 p.loadURDF("pushing/plane.urdf",[0,0,0], globalScaling=100.0, useFixedBase=True)
 cube_id = p.loadURDF("pushing/cube.urdf", [2, 2, 1], useFixedBase=False)
 grip_id = p.loadURDF("pushing/pr2_gripper.urdf", [0,0,4], globalScaling=4.0, useFixedBase=False)
-target_id = target = p.loadURDF("pushing/target.urdf", [2, 2, 0], globalScaling=1, useFixedBase=True)
 constraint_id = p.createConstraint(grip_id, -1, -1, -1, p.JOINT_FIXED,[0,0,0],[0,0,0],[0,0,1])
 num_joints = p.getNumJoints(grip_id)
 
@@ -95,11 +94,15 @@ def apply_push(dist, iters, orn):
     new_cube_pos, new_cube_orn = p.getBasePositionAndOrientation(cube_id)
     ang_loss = angular_loss([start_x, start_y], [end_x, end_y], [new_cube_pos[0], new_cube_pos[1]])
 
+    result = push_result([start_x, start_y], [end_x, end_y], [new_cube_pos[0], new_cube_pos[1]])
+
     # Print losses for the executed push
     print("****************")
     print("Aggregate Straight Line Loss: ", agg_straight_line_loss)
     print("Mean Straight Line Loss: ", agg_straight_line_loss/iters)
     print("Angular Loss: ", ang_loss)
+    print("****************")
+    print("Result: ", result)
     print("****************")
     p.removeUserDebugItem(line)
 
@@ -109,8 +112,7 @@ def apply_push(dist, iters, orn):
 
     # Data collection
     with open("test_output.txt", "a") as f:
-        # Add in
-        pass
+        f.write(str(dist) + " " + str(iters) + " " + str(list(orn)) + "\n" + str(result)+ "\n")
 
 
     # Back up gripper so no collisions
@@ -166,8 +168,30 @@ def angular_loss(start, end, point):
     return angle ** 2
 
 
+def calc_angle(start, end, point):
+    """
+    Calculates the angle between the a line specified by (start, end) and a line specified by (start, point)
+    :param start: the starting point of the trajectory
+    :param end: the end point of the trajectory
+    :param point: the object's point reference position
+    :return: the angle between the two lines in radians
+    """
+    ref_vec = (end[0] - start[0], end[1] - start[1])
+    obj_vec = (point[0] - start[0], point[1] - start[1])
+    ref_mag = math.sqrt(ref_vec[0]**2 + ref_vec[1]**2)
+    obj_mag = math.sqrt(obj_vec[0]**2 + obj_vec[1]**2)
+    dot = ref_vec[0] * obj_vec[0] + ref_vec[1] * obj_vec[1]
+    angle = math.acos(dot/(ref_mag * obj_mag))
+    return angle
+
+
 def push_result(start, end, point):
-    pass
+    angle = calc_angle(start, end, point)
+    obj_vec = (point[0] - start[0], point[1] - start[1])
+    obj_mag = math.sqrt(obj_vec[0]**2 + obj_vec[1]**2)
+    line_disp = obj_mag * math.cos(angle)               # Component of object displacement onto straight line trajectory
+    offset = obj_mag * math.sin(angle) * np.sign(angle)
+    return (line_disp, offset)
 
 
 # Run random samples
