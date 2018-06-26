@@ -92,8 +92,8 @@ def apply_push(dist, iters, orn):
     # Data collection
 
     # TODO when actually training, change test_output.txt to real data collection file
-    with open("test_output.txt", "a") as f:
-        f.write(str(dist) + " " + str(iters) + " " + str(list(orn)) + "\n" + str(result) + "\n")
+    # with open("test_output.txt", "a") as f:
+    #     f.write(str(dist) + " " + str(iters) + " " + str(list(orn)) + "\n" + str(result) + "\n")
 
     # Back up gripper so no collisions
     for i in range(100):
