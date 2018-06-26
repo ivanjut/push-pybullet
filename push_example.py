@@ -11,7 +11,7 @@ MIN_DIST = 2
 t = 0
 
 p.connect(p.GUI)
-p.loadURDF("pushing/plane.urdf",[0,0,0], globalScaling=1.0, useFixedBase=True)
+p.loadURDF("pushing/plane.urdf",[0,0,0], globalScaling=100.0, useFixedBase=True)
 cubeId = p.loadURDF("pushing/cube.urdf", [2, 2, 1], useFixedBase=False)
 gripId = p.loadURDF("pushing/pr2_gripper.urdf", [0,0,4], globalScaling=4.0, useFixedBase=False)
 cid = p.createConstraint(gripId, -1, -1, -1, p.JOINT_FIXED,[0,0,0],[0,0,0],[0,0,1])
@@ -24,10 +24,10 @@ Defines an iteration through time
 def eachIter():
     p.setGravity(0,0,-10)
     p.stepSimulation()
-    time.sleep(.001)
+    # time.sleep(.00001)
 
 
-def applyAction(angle, dist, iters, orn):
+def applyAction(dist, iters, orn):
     """
     Applies a push to the cube with the corresponding parameters
     :param angle: the angle of push relative to the world frame of the gripper
@@ -36,11 +36,12 @@ def applyAction(angle, dist, iters, orn):
     :param orn: the orientation of the gripper in Euler angles, only x and y coordinates specified
     """
     assert dist >= MIN_DIST
-
+    if (t % 100 == 0):
+        p.resetBasePositionAndOrientation(cubeId,[2,2,1],p.getQuaternionFromEuler([0, 0,random.uniform(0, 2*PI)]))
     gripPos, gripOrn = p.getBasePositionAndOrientation(gripId)
     cubePos, cubeOrn = p.getBasePositionAndOrientation(cubeId)
-    x_disp = math.cos(math.radians(angle))
-    y_disp = math.sin(math.radians(angle))
+    x_disp = math.cos(p.getEulerFromQuaternion(cubeOrn)[2])
+    y_disp = math.sin(p.getEulerFromQuaternion(cubeOrn)[2])
 
     # Pre push position for gripper with collision avoidance
     newGripX, newGripY = cubePos[0] + dist * x_disp, cubePos[1] + dist * y_disp
@@ -94,6 +95,8 @@ def applyAction(angle, dist, iters, orn):
     print("Loss: ", loss)
     print("****************")
     p.removeUserDebugItem(line)
+    with open("/u0/home/ngothoskar/Desktop/out.txt", "a") as f:
+        f.write(str(dist) + " " + str(iters) + " " + str(list(orn)) + "\n" + str(loss)+ "\n")
 
     # Back up gripper so no collisions
     for i in range(100):
@@ -133,16 +136,16 @@ def straight_line_loss(start, end, point):
 # Run random samples
 while (1):
     for i in range(1000):
-        angle = random.randint(0, 360)
         dist = random.uniform(2, 5)
-        iters = random.randrange(200, 600, 100)
+        iters = random.randint(200, 600)
         orn = [random.uniform(0, 2 * PI), random.uniform(0, PI/2)]
-        print("Angle: ", angle)
+        # print("Angle: ", angle)
         print("Distance: ", dist)
         print("Iterations: ", iters)
         print("Orientation: ", orn)
 
-        applyAction(angle, dist, iters, orn)
+        applyAction(dist, iters, orn)
+        t+=1
 
     eachIter()
-    t+=1
+    
