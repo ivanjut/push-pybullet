@@ -6,7 +6,7 @@ import numpy as np
 import random
 
 PI = math.pi
-MIN_DIST = 2
+DIST = 4
 t = 0
 
 p.connect(p.GUI)
@@ -26,14 +26,12 @@ def eachIter():
     # time.sleep(.0001)
 
 
-def apply_push(dist, iters, orn):
+def apply_push(iters, orn):
     """
     Applies a push to the cube with the corresponding parameters
-    :param dist: the distance between gripper and cube (must be greater than radius of cube + radius of gripper)
     :param iters: the number of iterations the push will last
     :param orn: the orientation of the gripper in Euler angles, only x and y coordinates specified
     """
-    assert dist >= MIN_DIST
 
     # Reset block every 100 pushes
     if (t % 100 == 0):
@@ -46,7 +44,7 @@ def apply_push(dist, iters, orn):
     y_disp = math.sin(p.getEulerFromQuaternion(cube_orn)[2])
 
     # Pre push position for gripper
-    new_grip_x, new_grip_y = cube_pos[0] + dist * x_disp, cube_pos[1] + dist * y_disp
+    new_grip_x, new_grip_y = cube_pos[0] + DIST * x_disp, cube_pos[1] + DIST * y_disp
     height = orn[1] * (2 / PI) + 0.5
     grip_new_pos = [new_grip_x, new_grip_y, height]
 
@@ -68,14 +66,14 @@ def apply_push(dist, iters, orn):
     # Draw line of desired trajectory
     start_x = grip_new_pos[0]
     start_y = grip_new_pos[1]
-    end_x = grip_new_pos[0] - 10 * dist * x_disp
-    end_y = grip_new_pos[1] - 10 * dist * y_disp
+    end_x = grip_new_pos[0] - 10 * DIST * x_disp
+    end_y = grip_new_pos[1] - 10 * DIST * y_disp
     line = p.addUserDebugLine(grip_new_pos, [end_x, end_y, 0], lineColorRGB=(1, 0, 0))  # addUserDebugText
 
     # Execute push
     for i in range(iters):
-        new_grip_pos = [cube_pos[0] + (iters - i) / (iters / dist) * x_disp,
-                        cube_pos[1] + (iters - i) / (iters / dist) * y_disp, height]
+        new_grip_pos = [cube_pos[0] + (iters - i) / (iters / DIST) * x_disp,
+                        cube_pos[1] + (iters - i) / (iters / DIST) * y_disp, height]
         p.changeConstraint(constraint_id, new_grip_pos, p.getQuaternionFromEuler(new_orn))
         eachIter()
     for i in range(400):
@@ -93,11 +91,11 @@ def apply_push(dist, iters, orn):
 
     # TODO when actually training, change test_output.txt to real data collection file
     with open("test_output.txt", "a") as f:
-        f.write(str(dist) + " " + str(iters) + " " + str(list(orn)) + "\n" + str(result) + "\n")
+        f.write(str(iters) + " " + str(list(orn)) + "\n" + str(result) + "\n")
 
     # Back up gripper so no collisions
     for i in range(100):
-        new_grip_pos = [cube_pos[0] + (i) / (100 / dist) * x_disp, cube_pos[1] + (i) / (100 / dist) * y_disp, height]
+        new_grip_pos = [cube_pos[0] + (i) / (100 / DIST) * x_disp, cube_pos[1] + (i) / (100 / DIST) * y_disp, height]
         p.changeConstraint(constraint_id, new_grip_pos, p.getQuaternionFromEuler(new_orn))
         eachIter()
     for i in range(100):
@@ -147,13 +145,11 @@ def push_result(start, end, point):
 # Run random samples
 while (1):
     for i in range(1000):
-        dist = random.uniform(2, 5)
         iters = random.randint(200, 600)
         orn = [random.uniform(0, 2 * PI), random.uniform(0, PI / 2)]
-        # print("Distance: ", dist)
         # print("Iterations: ", iters)
         # print("Orientation: ", orn)
-        apply_push(dist, iters, orn)
+        apply_push(iters, orn)
         t += 1
 
     eachIter()

@@ -22,5 +22,17 @@ with open("test_output.txt", 'r') as f:
             outputs.append([float(temp2[0]),float(temp2[1])])
         alternate = not alternate
 
-x = np.array(inputs)
+X = np.array(inputs)
 y = np.array(outputs)
+
+
+from sklearn.linear_model import LinearRegression
+
+clf = LinearRegression()
+clf.fit(y, X)
+
+for i in range(100):
+    print "-"
+    print y[i:i+1,:]
+    print clf.predict(y[i:i+1,:])
+    print X[i:i+1,:]
