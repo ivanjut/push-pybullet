@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<robot name="target">
+
+  <material name="green">
+    <color rgba="0 0.8 0 0.4"/>
+  </material>
+
+  <link name="target_link">
+    <visual>
+      <geometry>
+        <cylinder length="0.5" radius="1"/>
+      </geometry>
+      <material name="green"/>
+    </visual>
+  </link>
+
+</robot>
+

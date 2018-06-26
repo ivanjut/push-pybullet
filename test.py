@@ -14,6 +14,9 @@ p.connect(p.GUI)
 p.loadURDF("pushing/plane.urdf",[0,0,0], globalScaling=1.0, useFixedBase=True)
 cubeId = p.loadURDF("pushing/cube.urdf", [2, 2, 1], useFixedBase=False)
 gripId = p.loadURDF("pushing/pr2_gripper.urdf", [0,0,4], globalScaling=4.0, useFixedBase=False)
+
+target = p.loadURDF("pushing/target.urdf", [2, 2, 0], globalScaling=1, useFixedBase=True)
+
 cid = p.createConstraint(gripId, -1, -1, -1, p.JOINT_FIXED,[0,0,0],[0,0,0],[0,0,1])
 numJoints = p.getNumJoints(gripId)
 
@@ -144,18 +147,18 @@ def straight_line_loss(start, end, point):
 
 # Run random samples
 while (1):
-    # for i in range(1000):
-    #     angle = random.randint(0, 360)
-    #     dist = random.uniform(2, 5)
-    #     iters = random.randrange(200, 600, 100)
-    #     orn = [random.uniform(0, 2 * PI), random.uniform(0, PI/2)]
-    #     print("Angle: ", angle)
-    #     print("Distance: ", dist)
-    #     print("Iterations: ", iters)
-    #     print("Gripper Orientation: ", orn)
-    #
-    #     applyAction(angle, dist, iters, orn)
-    cubePos, cubeOrn = p.getBasePositionAndOrientation(cubeId)
-    print("Cube orientation: ", cubeOrn)
+    for i in range(1000):
+        angle = random.randint(0, 360)
+        dist = random.uniform(2, 5)
+        iters = random.randrange(200, 600, 100)
+        orn = [random.uniform(0, 2 * PI), random.uniform(0, PI/2)]
+        print("Angle: ", angle)
+        print("Distance: ", dist)
+        print("Iterations: ", iters)
+        print("Gripper Orientation: ", orn)
+
+        applyAction(angle, dist, iters, orn)
+    # cubePos, cubeOrn = p.getBasePositionAndOrientation(cubeId)
+    # print("Cube orientation: ", cubeOrn)
     eachIter()
     t+=1
