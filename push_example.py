@@ -23,14 +23,17 @@ def eachIter():
     """
     p.setGravity(0, 0, -10)
     p.stepSimulation()
-    # time.sleep(.0001)
+    time.sleep(.001)
 
 
-def apply_push(iters, orn):
+def apply_push(dist, iters, orn, open_gripper):
     """
     Applies a push to the cube with the corresponding parameters
-    :param iters: the number of iterations the push will last
+    :param dist: distance the gripper will travel after contact with the block
+    :param iters: the number of iterations for the push
     :param orn: the orientation of the gripper in Euler angles, only x and y coordinates specified
+                x: [0, 2 * PI];  y: [0, PI/2]
+    :param open_gripper: true if the gripper is open, false otherwise
     """
 
     # Reset block every 100 pushes
@@ -45,6 +48,7 @@ def apply_push(iters, orn):
 
     # Pre push position for gripper
     new_grip_x, new_grip_y = cube_pos[0] + DIST * x_disp, cube_pos[1] + DIST * y_disp
+    pregrip_new_pos = [new_grip_x, new_grip_y, 4]
     height = orn[1] * (2 / PI) + 0.5
     grip_new_pos = [new_grip_x, new_grip_y, height]
 
@@ -55,12 +59,17 @@ def apply_push(iters, orn):
                (math.atan2(vec[0], -vec[1]) - PI / 2) % (2 * PI)]  # Points gripper at cube (z orientation)
 
     # Move gripper to new position
+    p.changeConstraint(constraint_id, pregrip_new_pos, p.getQuaternionFromEuler(new_orn))
     for i in range(100):
         eachIter()
     p.changeConstraint(constraint_id, grip_new_pos, p.getQuaternionFromEuler(new_orn))
     for i in range(100):
         eachIter()
+
     p.setJointMotorControlArray(grip_id, range(num_joints), p.POSITION_CONTROL, [0.0] * num_joints)
+    if open_gripper:
+        p.setJointMotorControlArray(grip_id, [0, 2], p.POSITION_CONTROL, [0.4, 0.4])
+
     eachIter()
 
     # Draw line of desired trajectory
@@ -71,12 +80,13 @@ def apply_push(iters, orn):
     line = p.addUserDebugLine(grip_new_pos, [end_x, end_y, 0], lineColorRGB=(1, 0, 0))  # addUserDebugText
 
     # Execute push
-    for i in range(iters):
-        new_grip_pos = [cube_pos[0] + (iters - i) / (iters / DIST) * x_disp,
-                        cube_pos[1] + (iters - i) / (iters / DIST) * y_disp, height]
-        p.changeConstraint(constraint_id, new_grip_pos, p.getQuaternionFromEuler(new_orn))
-        eachIter()
-    for i in range(400):
+    total_dist = DIST + dist
+    extra_iters = int(round(DIST/(dist/iters)))
+    total_iters = iters + extra_iters
+    for i in range(total_iters):
+        grip_new_pos = [grip_new_pos[0] - total_dist / total_iters * x_disp,
+                        grip_new_pos[1] - total_dist / total_iters * y_disp, height]
+        p.changeConstraint(constraint_id, grip_new_pos, p.getQuaternionFromEuler(new_orn))
         eachIter()
 
     # Get result
@@ -90,13 +100,14 @@ def apply_push(iters, orn):
     # Data collection
 
     # TODO change test_output.txt to real data collection file
-    with open("test_output.txt", "a") as f:
-        f.write(str(iters) + " " + str(list(orn)) + "\n" + str(result) + "\n")
+    # with open("test_output.txt", "a") as f:
+    #     f.write(str(iters) + " " + str(list(orn)) + "\n" + str(result) + "\n")
 
     # Back up gripper so no collisions
     for i in range(100):
-        new_grip_pos = [cube_pos[0] + (i) / (100 / DIST) * x_disp, cube_pos[1] + (i) / (100 / DIST) * y_disp, height]
-        p.changeConstraint(constraint_id, new_grip_pos, p.getQuaternionFromEuler(new_orn))
+        grip_new_pos = [grip_new_pos[0] + DIST / 100 * x_disp,
+                        grip_new_pos[1] + DIST / 100 * y_disp, height]
+        p.changeConstraint(constraint_id, grip_new_pos, p.getQuaternionFromEuler(new_orn))
         eachIter()
     for i in range(100):
         eachIter()
@@ -142,15 +153,32 @@ def push_result(start, end, point):
     return line_disp, offset
 
 
-# Run random samples
-while (1):
+# TEST
+while(1):
     for i in range(1000):
-        iters = random.randint(200, 600)
-        orn = [random.uniform(0, 2 * PI), random.uniform(0, PI / 2)]
+        dist = random.uniform(0.5,4)
+        iters = random.randint(100, 600)
+        orn = [random.uniform(0, 2*PI), random.uniform(0, PI/2)]
+        open_gripper = random.choice([True, False])
+        # iters = random.randint(200, 600)
+        # orn = [random.uniform(0, 2 * PI), random.uniform(0, PI / 2)]
         # print("Iterations: ", iters)
         # print("Orientation: ", orn)
-        apply_push(iters, orn)
-        t += 1
+        apply_push(dist, iters, orn, open_gripper)
 
+        t += 1
     eachIter()
+
+
+# Run random samples
+# while (1):
+#     for i in range(1000):
+#         iters = random.randint(200, 600)
+#         orn = [random.uniform(0, 2 * PI), random.uniform(0, PI / 2)]
+#         # print("Iterations: ", iters)
+#         # print("Orientation: ", orn)
+#         apply_push(iters, orn)
+#         t += 1
+#
+#     eachIter()
 
