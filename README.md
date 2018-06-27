@@ -22,7 +22,7 @@ We then started thinking about possible loss functions to develop a learning mod
 
 We implemented a total straight-line loss, a mean straight-line loss (total divided by number of iterations), and an angular loss function. The angular loss is the angle between the desired straight-line trajectory and the line to the cube's end position. An example of two pushes is below, with the parameters printed and their associated losses.
 
-<img src="https://github.com/ivanjut/push-pybullet/blob/master/demos/initial_losses.png" width="300" height="300">
+<img src="https://github.com/ivanjut/push-pybullet/blob/master/demos/initial_losses.png" width="250" height="300">
 
 ### Iteration 4: New constraint
 We incorporated the constraint that the gripper could only push the block normal to one of it's faces.
@@ -32,7 +32,11 @@ We decided to change our model to one that would more accurately represent what 
 
 ![Fifth Iteration](https://github.com/ivanjut/push-pybullet/blob/master/demos/fifth_iteration.gif)
 
-<img src="https://github.com/ivanjut/push-pybullet/blob/master/demos/results.png" width="300" height="300">
+<img src="https://github.com/ivanjut/push-pybullet/blob/master/demos/results.png" width="250" height="300">
 
 
 ## DATA COLLECTION
+We ran the experiment for about 30 minutes, collecting over 40,000 samples as data. We fit a linear regression model to that data using scikit-learn, which performed surprisingly well. Also, for fun we plotted some of this data (though it doesn't tell us much).
+
+
+<img src="https://github.com/ivanjut/push-pybullet/blob/master/demos/first_data.png" width="300" height="300">
