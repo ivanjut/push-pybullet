@@ -27,8 +27,8 @@ We implemented a total straight-line loss, a mean straight-line loss (total divi
 ### Iteration 4: New constraint
 We incorporated the constraint that the gripper could only push the block normal to one of it's faces.
 
-### Iteration 5: New Model!
-We decided to change our model to one that would more accurately represent what we are trying to teach the robot. Instead of measuring loss on a straight line trajectory, we decided instead to collect data about pushes based on the parameters of the push, and where the cube ended up as a result (relative to a straight line path). The idea is to generate pairs of `(params, result)` and try to fit a model to that collected data.
+### Iteration 5: New Idea!
+We decided to change our experiment to one that would more accurately represent what we are trying to teach the robot. Instead of measuring loss on a straight line trajectory, we decided instead to collect data about pushes based on the parameters of the push, and where the cube ended up as a result (relative to a straight line path). The idea is to generate pairs of `(params, result)` and try to fit a model to that collected data.
 
 ![Fifth Iteration](https://github.com/ivanjut/push-pybullet/blob/master/demos/fifth_iteration.gif)
 
